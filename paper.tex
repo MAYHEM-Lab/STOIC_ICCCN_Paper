@@ -1,0 +1,94 @@
+\documentclass[10pt, conference, compsocconf]{IEEEtran}
+\newcommand{\ignore}[1]{}
+% *** GRAPHICS RELATED PACKAGES ***
+\usepackage[pdftex]{graphicx}
+\usepackage{xcolor}
+\usepackage{caption} %needed to make captions on figure* centered
+\graphicspath{{./figures/}}
+\DeclareGraphicsExtensions{.pdf,.png}
+\usepackage[bookmarks=false]{hyperref}
+\usepackage[linesnumbered, ruled, vlined]{algorithm2e}
+
+% correct bad hyphenation here
+\hyphenation{Tele-operable}
+
+\begin{document}
+
+% paper title
+\title{STOIC: Serverless Teleoperable Hybrid Cloud for Machine Learning Applications on Edge Device}
+
+\author{\IEEEauthorblockN{Michael Zhang, Chandra Krintz, Rich Wolski}
+\IEEEauthorblockA{\textit{Dept. of Computer Science} \\
+\textit{University of California, Santa Barbara}\\
+\textit{\{lebo, ckrintz, rich\}@cs.ucsb.edu}}
+}
+
+%\author{\IEEEauthorblockN{Omitted for Blind Review}%\\
+%\IEEEauthorblockA{Blind Review \\
+%Blind Review\\
+%&\{blind\}@blind.blind.blind}
+%}
+
+
+
+% make the title area
+\maketitle
+
+\begin{abstract}
+\label{sec:abstract}
+\input{abstract}
+\end{abstract}
+
+\begin{IEEEkeywords}
+Serverless computing; Edge computing; Image Processing; Internet of Things
+\end{IEEEkeywords}
+
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+\IEEEpeerreviewmaketitle
+
+\section{Introduction}
+\label{sec:intro}
+\input{intro}
+
+%\section{Background}
+%\label{sec:background}
+%\input{background}
+
+\section{STOIC}
+\label{sec:STOIC}
+\input{STOIC}
+
+\section{Evaluation}
+\label{sec:eval}
+\input{results}
+
+\section{Related Work}
+\label{sec:relate_work}
+\input{related_work}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+\input{conclusion}
+
+
+\section*{Acknowledgments}
+This work has been supported in part by NSF (CNS-1703560, CCF-1539586,
+ACI-1541215), ONR NEEC (N00174-16-C-0020),
+and the AWS Cloud Credits for Research program.
+
+
+% references section
+\bibliographystyle{IEEEtran}
+\bibliography{ref}
+% \end{thebibliography}
+
+\end{document}
