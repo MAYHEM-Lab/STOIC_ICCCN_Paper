@@ -1,6 +1,6 @@
-# STOIC_PerCom_Paper
+# STOIC_ICCCN_Paper
 
-Serverless Teleoperable Hybrid Cloud for Machine Learning Applications on Edge Device
+A Consistent and Adaptable Serverless Frameworkfor Machine Learning Application on Edge Cloud
 
 Figure Editing URL:
 
