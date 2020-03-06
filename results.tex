@@ -33,4 +33,15 @@ Further, we define an error metric, Mean Deadline Error (MDE), to better gauge t
 
 To address the above issue, we reconfigure STOIC into the duplicator mode demonstrated in Figure~\ref{fig:duplicator}. Based on the historical data, the selector makes prediction and only execute workload at the runtime with least total latency, whereas the duplicator runs workload on edge cloud and GPU runtimes concurrently, and halts the edge cloud execution if the remaining time at edge cloud is longer than the expected processing time ($T_p$) at the GPU runtime once it completes deployment. Under this mode, STOIC is able to make right selection between edge cloud and GPU1 runtime and promptly respond to the request \textbf{96.7\%} of times (149 out of 154). 
 
-In the case of gpu2 runtime, it has more variable deployment and processing time compared to gpu1 runtime, which possibly leads to lower success rate of selection. The analytics of the data proves this assumption that STOIC makes right selection between edge cloud and gpu2 runtime by \textbf{94.8\%} (146 out of 154) of times, 1.9\% lower than being with gpu1 runtime. However, the total latency of gpu1 runtime (154 image batches) is \textbf{8872.65} seconds, whereas the total latency is \textbf{8396.9} seconds for gpu2 runtime. We argue that even though STOIC make more mistakes for gpu2 than gpu1, the duplicator mode of edge cloud versus gpu2 makes the entire end-to-end system faster and more efficient. We plan to investigate runtimes with more GPUs and the trade-off between the predictability and efficiency of system as future work.
+\begin{table}[t] 
+\centering
+\captionsetup{justification=centering}
+\caption{ \hspace{0pt} \\
+\textsc{Mean and Stdev. of Total Response Time~($T_r$) and Processing Time~($T_p$) of 40-Image Batch: STOIC Schedules Tasks onto the Runtime (\textit{gpu1}) that Has the Least Total Response Time~($T_r$).}}
+\input{tables/duplicator}
+
+\label{tab:validation}
+\end{table}
+
+
+In the case of gpu2 runtime, it has more variable deployment and processing time compared to gpu1 runtime, which possibly leads to lower success rate of selection. The analytics of the data proves this assumption that STOIC makes right selection between edge cloud and gpu2 runtime by \textbf{94.8\%} (146 out of 154) of times, 1.9\% lower than being with gpu1 runtime. However, the average latency of gpu1 runtime (154 image batches) is \textbf{57.61} seconds, whereas the total latency is \textbf{54.52} seconds for gpu2 runtime. We argue that even though STOIC make more mistakes for gpu2 than gpu1, the duplicator mode of edge cloud versus gpu2 makes the entire end-to-end system faster and more efficient. We plan to investigate runtimes with more GPUs and the trade-off between the predictability and efficiency of system as future work.
