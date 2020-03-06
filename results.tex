@@ -1,57 +1,36 @@
-In this section, we empirically evaluate STOIC's performance when executing machine learning applications. We compare its use of multiple runtimes
-versus solely using a single runtime for all batches.  In the sections
-that follow, we first describe 
-the machine learning application that we consider. We then
-present our experimental setup and results. 
+In this section, we empirically evaluate STOIC's performance when executing machine learning application. For every request, we run benchmark application on all available runtimes and compare the selection made by STOIC based on the predicted latency and the runtime with least total latency. In this section, we first describe the benchmark application that we consider, followed by our experimental setup and results. 
 
 \subsection{Benchmark Application and Dataset}
 
-We evaluate STOIC using an image processing application that classifies animal images from a wildlife monitoring system called ``Where's The Bear" (WTB)~\cite{ref:wtb}. ``Where's The Bear" is an end-to-end distributed data acquisition and analytics system that implements an IoT architecture and edge cloud. Our application makes inferences for each photo taken by deployed camera traps in Sedgwick Natural Reserve using a convolutional neural network (CNN)~\cite{ref:cnn}.  We train the model using labeled images from the WTB dataset. Technically, the application employs Tensorflow and Scikit-learn~\cite{ref:scikit} to implement 
-image classification.  
+We evaluate STOIC using an image processing application that classifies animal images from a wildlife monitoring system called ``Where's The Bear" (WTB)~\cite{ref:wtb}. ``Where's The Bear" is an end-to-end distributed data acquisition and analytics system that implements an IoT architecture and edge cloud. Our application makes inferences for each photo taken by deployed camera traps in Sedgwick Natural Reserve using a convolutional neural network (CNN)~\cite{ref:cnn}.  We train the model using labeled images from the WTB dataset. Technically, the application employs Tensorflow and Scikit-learn~\cite{ref:scikit} to implement image classification.  
 
 In total, there are five classes that we consider in the CNN model training: Bird, Fox, Rodent, Human and Empty. Since class size is unbalanced due to frequencies of animal occurrences, we up-sample minority classes (e.g. fox) using the Keras ImageDataGenerator~\cite{ref:keras}.  Doing so ensures that the classification model is not biased. We resize every image in the WTB dataset to $1920 \times 1080$, and for each class, the dataset contains 251 images used to train the CNN model. Once model training is complete, the application stores this model in hdf5 format in cloud storage at both edge cloud (disk storage) and Nautilus (a shared volume in a Ceph file system).
 
-\subsection{Performance Evaluation}
+To better harness the multiple GPU runtime in the public cloud, the application assigns each GPU to a spawned process, namely worker, and adds all images in the batch to a shared asynchronous queue. Upon the execution, all workers pick up the image job from the shared queue until it is exhausted. This mechanism ensures multiple GPUs evenly divide the workloads and achieve quasi-linear acceleration at application level, where the perfect linear speed-up is unattainable due to model loading and memory transfer overhead~\cite{ref:multi_gpu}. 
 
-\begin{table}[t] \centering 
-\input{tables/validation}
-\caption{Mean and stdev. of total response time~($T_r$) and processing time~($T_p$) of 40-image batch: STOIC schedules tasks onto the runtime (\textit{gpu1}) that has the least total response time~($T_r$).
-\label{tab:validation}}
-\end{table}
+\subsection{Efficacy Experiments}
 
-We first test the efficacy of STOIC by processing an image batch of fixed size at four runtimes individually and then compare them with STOIC. To make the result reliable, we again conduct the experiment 10 times and list the mean and standard deviation of total response time~($T_r$) and processing time~($T_p$) in Table~\ref{tab:validation}. We can observe from Table~\ref{tab:validation} that STOIC schedules 40-image batch to \textit{gpu1} runtime, based on its prediction that  \textit{gpu1} would have the least total response time~($T_r$). One important observation is that \textit{gpu2} runtime has even lower processing time~($T_p$) than \textit{gpu1}, but STOIC disregard \textit{gpu2} in this scenario, because its gain in processing time~($T_p$) does not compensate for its lengthy deployment time~($T_d$) on Nautilus cloud.
-
-\begin{figure}[t] \centering 
-\includegraphics[scale=0.32]{response-time}
-\caption{Total Response Time~($T_r$) of image batches of growing sizes: The x-axis represents the batch size, while the y-axis is the total response time~($T_r$). STOIC, which is depicted in the blue dashed line, schedules the task on the runtime with the least total response time.  
-\label{fig:response-time}}
-\end{figure}
-
-We next test STOIC by processing a series of image batches of growing sizes on the four runtimes and STOIC. Figure~\ref{fig:response-time} shows their total response times. The x-axis is the size of the image batch and the y-axis is the total response time~($T_r$) in seconds. The red curve shows that latency
-increases linearly over the \textit{edge} runtime.  The yellow curve shows the performance of the \textit{cpu} runtime in the Nautilus cloud. 
-We observe that its slope is more moderate than \textit{edge} runtime since CPUs in nodes of Nautilus cloud are usually more powerful than those in the edge cloud. The pink and green curve represent the \textit{gpu1} and \textit{gpu2} runtimes, respectively, and they intersect at a batch size of 95, at which STOIC would switch the deployment of tasks from \textit{gpu1} to \textit{gpu2}. The blue dashed line depicts the total response time~($T_r$) of STOIC, which is able to schedule a series of tasks to the runtime with the least latency. According to such result, STOIC improves system performance by determining the best runtime
-for the given task dynamically.
+We first test the efficacy of STOIC by processing a sequence of image batches at four runtimes individually and then compare them with the determined runtime by STOIC. According to 2016 WTB dataset, the size of image batch fits to normal distribution $\mathbf{N}(\mu = 42.75, \sigma^2 = 39.5)$. To conduct an unbiased evaluation, we seed the simulator to make these image batches consistent across all runtimes and STOIC.
 
 
-%\subsection{Empirical Experiment}
-
-
-% \begin{table}[t]
-%     \centering
-%     \input{tables/24-batch}
-%     \caption{\textbf{Average total response time~($T_r$) and speed-up on 24-hour dataset}: Comparing with four single runtimes, STOIC achieves lowest average latency and speed-up ranging from 6.48\% to 32.05\%. }
-%     \label{tab:24-batches}
-% \end{table}
-
-
-We next perform an empirical evaluation of STOIC by comparing the total response time~($T_r$) of multiple image batches of different sizes across the four single runtimes and STOIC.  To accelerate the repetitive experiment, we developed a simulator to generate image batches based on the frequency distribution of the WTB dataset. 
-
-According to 2016 WTB dataset, the size of image batch fits to normal distribution $\mathbf{N}(\mu = 42.75, \sigma^2 = 39.5)$. Thus, the simulator generates 24 image batches in the edge controller to emulate streaming data in one day from open field camera traps. To conduct an unbiased evaluation, we seed the simulator to make these 24 image batches consistent across all runtimes and STOIC. 
+To make the result reliable, we conduct the experiment for a 24-hour time range, in which  154 image batches (616 executions) are processed by STOIC. Based on the data we observe, STOIC successfully selects the runtime of least latency by \textbf{85.1\%} of times (131 out of 154). We then compare the actual latency between the worst selection scenario and STOIC. The total latency of selected runtime by STOIC is 8041.06 seconds, whereas in the worst scenario the total latency is 18563.82 seconds. This indicates STOIC accelerates the execution of image processing by \textbf{2.3} times if the runtimes are erroneously selected by dispatcher.
 
 \begin{figure}[t] \centering 
-\includegraphics[scale=0.42]{figures/24-batches}
-\caption{Average total response time~($T_r$) on the 24-hour dataset: The x-axis represents runtimes, while the y-axis represents the average total response time~($T_r$) by STOIC and four other runtimes on the 24-hour dataset. The data labels on columns are specific numbers of $T_r$. The seeded simulator generates the 24-hour batch sizes from the distribution of historical data. 
-\label{fig:24-batch}}
+\includegraphics[scale=0.14]{gpu1_latency.png}
+\caption{The distribution of three components in total response time~($T_r$): Processing time ($T_p$), Runtime deployment time ($T_d$) and Transfer time ($T_t$). The x-axis represents the time range, while the y-axis is the frequency of executions. The deployment time, which is depicted in the red histogram, is volatile and error-prone to prediction.
+\label{fig:breakdown}}
 \end{figure}
 
-To ensure the validity of the outcome, we run each experiment 10 times for each runtime scenario and report the average value. Figure~\ref{fig:24-batch} shows the average total response time~($T_r$) for STOIC and the four individual runtimes. STOIC achieves the lowest average latency versus the four other single runtimes.  STOIC reduces total response time~($T_r$) by 32.05\% (versus \textit{edge}), 6.48\% (versus \textit{cpu}), 11.15\% (versus \textit{gpu1}) and 12.24\% (versus \textit{gpu2}) respectively. According to such a result, we conclude that STOIC outperforms single-runtime scheduling mechanism on the empirical datasets and real-world machine learning applications.
+We further analyze the data points where STOIC made erroneous selection and found two sources of error. First, the most error occurs around two batch sizes where the total response time of runtimes have approximately same latency. To be specific, the edge and GPU runtimes cross over at 35 image batch size, and 90 image batch size for the GPU1 and GPU2 runtimes. At these cross-points, the close predictions of latency lead to incorrect selection. Second, the deployment time for GPU runtimes are volatile and error-prone to prediction. As a representative instance, Figure~\ref{fig:breakdown} demonstrates the distribution of processing time ($T_p$), transfer time ($T_t$) and deployment time ($T_d$) of GPU1 runtime. We observe geometric distribution from the histogram of processing time and transfer time, whereas deployment time varies irregularly with many outliers. These two phenomenons lead to mistaken selections in the experiment.
+
+Further, we define an error metric, Mean Deadline Error (MDE), to better gauge the predictive capability of STOIC between edge cloud and GPU runtimes. Since the dedicated edge cloud is closer to the data source and more homogeneous and robust compared to public cloud, we are only concerned when GPU runtimes have longer total latency than edge cloud and STOIC deploys the workload to GPU runtimes. Mean Deadline Error is defined as $MDE = \frac{1}{n}\sum(L_g - L_e) \,|\ if \ L_g > L_e \ \& \ R_s = GPUx $, where $L_g$ is the latency of GPU runtime, $L_e$ is the latency of edge cloud, $R_s$ is the selected runtime by STOIC. Based on the experiment data, the MDE gpu1 is \textbf{26.68} seconds (44.18\% to the mean gpu1 runtime latency) and MDE gpu2 is \textbf{43.98} seconds (47.43\% to the mean gpu2 runtime latency). This result implies that the unstable deployment time of GPU runtimes significantly affects the accuracy of prediction made by STOIC. 
+
+\begin{figure}[t] \centering 
+\includegraphics[scale=0.35]{selector_duplicator.png}
+\caption{The selector and duplicator modes of STOIC. 
+\label{fig:duplicator}}
+\end{figure}
+
+To address the above issue, we reconfigure STOIC into the duplicator mode demonstrated in Figure~\ref{fig:duplicator}. Based on the historical data, the selector makes prediction and only execute workload at the runtime with least total latency, whereas the duplicator runs workload on edge cloud and GPU runtimes concurrently, and halts the edge cloud execution if the remaining time at edge cloud is longer than the expected processing time ($T_p$) at the GPU runtime once it completes deployment. Under this mode, STOIC is able to make right selection between edge cloud and GPU1 runtime and promptly respond to the request \textbf{96.7\%} of times (149 out of 154). 
+
+In the case of gpu2 runtime, it has more variable deployment and processing time compared to gpu1 runtime, which possibly leads to lower success rate of selection. The analytics of the data proves this assumption that STOIC makes right selection between edge cloud and gpu2 runtime by \textbf{94.8\%} (146 out of 154) of times, 1.9\% lower than being with gpu1 runtime. However, the total latency of gpu1 runtime (154 image batches) is \textbf{8872.65} seconds, whereas the total latency is \textbf{8396.9} seconds for gpu2 runtime. We argue that even though STOIC make more mistakes for gpu2 than gpu1, the duplicator mode of edge cloud versus gpu2 makes the entire end-to-end system faster and more efficient. We plan to investigate runtimes with more GPUs and the trade-off between the predictability and efficiency of system as future work.
